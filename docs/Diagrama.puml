@@ -1,0 +1,320 @@
+@startuml
+
+title EnvíaGT · Diagrama de clases
+
+'  ESTILO 
+
+top to bottom direction
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam titleFontSize 22
+skinparam titleFontColor #134E4A
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam packageStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 55
+skinparam linetype polyline
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 1.2
+
+skinparam class {
+  BackgroundColor #F0FDFA
+  BorderColor #0F766E
+  FontColor #134E4A
+  AttributeFontColor #334155
+  StereotypeFontColor #64748B
+}
+
+skinparam package {
+  BackgroundColor #FAFCFD
+  BorderColor #CBD5E1
+  FontColor #475569
+  FontStyle bold
+}
+
+skinparam note {
+  BackgroundColor #FFFBEB
+  BorderColor #E7C873
+  FontColor #785A16
+  FontSize 11
+}
+
+hide circle
+hide empty members
+
+'  PRESENTACIÓN 
+
+package "Presentación" {
+
+  class Main #EFF6FF {
+    {static} + main(args: String[]): void
+  }
+
+  class View #EFF6FF {
+    - input: Scanner
+
+    + View()
+    + showMenu(): void
+    + readOption(): int
+    + readText(message: String): String
+    + readDouble(message: String): double
+    + showMessage(message: String): void
+    + showError(message: String): void
+    + showReport(report: String): void
+  }
+
+}
+
+'  GESTIÓN 
+
+package "Gestión del sistema" {
+
+  class ShippingSystem #EFF6FF {
+    - shipments: Map<String, Shipment>
+    - vehicles: Map<String, Vehicle>
+    - dispatches: Map<Integer, Dispatch>
+    - registrationIncome: Map<String, Double>
+    - retryIncome: Map<String, Double>
+    - totalRegistrationIncome: double
+    - totalRetryIncome: double
+    - nextDispatchId: int
+
+    + ShippingSystem()
+    + quote(shipment: Shipment): double
+    + registerShipment(shipment: Shipment): void
+    + registerVehicle(vehicle: Vehicle): void
+    + createDispatch(plate: String): Dispatch
+    + assign(dispatchId: int, code: String): void
+    + remove(dispatchId: int, code: String): void
+    + depart(dispatchId: int): void
+    + recordResult(dispatchId: int, code: String, success: boolean): void
+    + getShipments(): Collection<Shipment>
+    + getVehicles(): Collection<Vehicle>
+    + getDispatches(): Collection<Dispatch>
+    + getRegistrationIncome(): Map<String, Double>
+    + getRetryIncome(): Map<String, Double>
+    + getTotalRegistrationIncome(): double
+    + getTotalRetryIncome(): double
+    + report(): String
+  }
+
+}
+
+'  LOGÍSTICA 
+
+package "Logística" {
+
+  class Dispatch {
+    - id: int
+    - vehicle: Vehicle
+    - shipments: List<Shipment>
+    - pending: Set<String>
+    - status: DispatchStatus
+
+    + Dispatch(int, Vehicle)
+    + getId(): int
+    + getVehicle(): Vehicle
+    + getShipments(): List<Shipment>
+    + getStatus(): DispatchStatus
+    + getLoadedWeight(): double
+    + getAvailableCapacity(): double
+    + addShipment(shipment: Shipment): void
+    + removeShipment(shipment: Shipment): void
+    + depart(): int
+    + recordResult(code: String, success: boolean): void
+  }
+
+  class Vehicle {
+    - plate: String
+    - capacity: double
+    - refrigeration: boolean
+
+    + Vehicle(String, double, boolean)
+    + getPlate(): String
+    + getCapacity(): double
+    + hasRefrigeration(): boolean
+    + toString(): String
+  }
+
+}
+
+'  ENVÍOS 
+
+package "Envíos" {
+
+  abstract class Shipment {
+    - code: String
+    - senderName: String
+    - recipientName: String
+    - weight: double
+    - destinationType: DestinationType
+    - status: ShipmentStatus
+    - deliveryAttempts: int
+
+    # Shipment(String, String, String, double, DestinationType)
+    + getCode(): String
+    + getSenderName(): String
+    + getRecipientName(): String
+    + getWeight(): double
+    + getDestinationType(): DestinationType
+    + getStatus(): ShipmentStatus
+    + getDeliveryAttempts(): int
+    {abstract} + calculateCost(): double
+    {abstract} + getEstimatedDays(): int
+    {abstract} + getMaxAttempts(): int
+    + requiresRefrigeration(): boolean
+    + isCompatibleWith(vehicle: Vehicle): boolean
+    + assign(): void
+    + unassign(): void
+    + dispatch(): boolean
+    + registerAttempt(success: boolean): void
+    + toString(): String
+  }
+
+  class Envelope {
+    + Envelope(String, String, String, double, DestinationType)
+    + calculateCost(): double
+    + getEstimatedDays(): int
+    + getMaxAttempts(): int
+  }
+
+  class Package {
+    - length: double
+    - width: double
+    - height: double
+
+    + Package(String, String, String, double, DestinationType, double, double, double)
+    + getLength(): double
+    + getWidth(): double
+    + getHeight(): double
+    + getBillableWeight(): double
+    + calculateCost(): double
+    + getEstimatedDays(): int
+    + getMaxAttempts(): int
+  }
+
+  class FragilePackage {
+    - declaredValue: double
+
+    + FragilePackage(String, String, String, double, DestinationType, double, double, double, double)
+    + getDeclaredValue(): double
+    + calculateCost(): double
+    + getEstimatedDays(): int
+    + getMaxAttempts(): int
+  }
+
+  class RefrigeratedCargo {
+    - temperature: double
+
+    + RefrigeratedCargo(String, String, String, double, DestinationType, double)
+    + getTemperature(): double
+    + calculateCost(): double
+    + getEstimatedDays(): int
+    + getMaxAttempts(): int
+    + requiresRefrigeration(): boolean
+  }
+
+}
+
+'  ENUMERACIONES 
+
+package "Tipos y estados" {
+
+  enum DestinationType #F5F3FF {
+    URBAN
+    DEPARTMENTAL
+  }
+
+  enum ShipmentStatus #F5F3FF {
+    IN_WAREHOUSE
+    ASSIGNED
+    IN_ROUTE
+    DELIVERED
+    RETURNED
+  }
+
+  enum DispatchStatus #F5F3FF {
+    PREPARING
+    IN_ROUTE
+    CLOSED
+  }
+
+}
+
+'  HERENCIA 
+
+Shipment <|-- Envelope
+Shipment <|-- Package
+Shipment <|-- RefrigeratedCargo
+Package <|-- FragilePackage
+
+'  ASOCIACIONES 
+
+ShippingSystem --> Shipment : registra
+ShippingSystem --> Vehicle : registra
+ShippingSystem --> Dispatch : administra
+
+Dispatch --> Vehicle : utiliza
+Dispatch --> Shipment : incluye
+
+'  DEPENDENCIAS 
+
+Main ..> View : utiliza
+Main ..> ShippingSystem : coordina
+
+Shipment ..> Vehicle : consulta compatibilidad
+Shipment ..> DestinationType
+Shipment ..> ShipmentStatus
+Dispatch ..> DispatchStatus
+
+'  REGLAS 
+
+note bottom of ShippingSystem
+  Código de envío y placa únicos.
+  Cotizar no registra ni cobra.
+  Reintento: Q15 al volver a salir.
+  Colecciones expuestas como
+  vistas no modificables.
+end note
+
+note bottom of Dispatch
+  Un despacho abierto por vehículo.
+  Una asignación activa por envío.
+  Capacidad según el peso real.
+  No puede salir vacío.
+  En ruta: sin agregar ni retirar.
+  Cierra al completar los resultados.
+end note
+
+note bottom of Envelope
+  Peso máximo: 0.5 kg.
+  Hasta 3 intentos.
+end note
+
+note right of Package
+  Peso facturable:
+  ceil(max(peso real,
+  largo * ancho * alto / 5000)).
+  Hasta 3 intentos.
+end note
+
+note bottom of FragilePackage
+  Valor declarado positivo.
+  Costo de Package + Q15
+  + 3% del valor declarado.
+  Hasta 2 intentos.
+end note
+
+note bottom of RefrigeratedCargo
+  Solo destino urbano.
+  Temperatura: -25 a 8 °C.
+  Vehículo con refrigeración.
+  Un único intento.
+end note
+
+@enduml
